@@ -4,11 +4,6 @@
 
 #include <stdio.h>
 
-void wait() {
-  volatile int sum = 0;
-  for (int i=0; i<10000; ++i) sum += i;
-}
-
 __global__
 void vecadd(float *a, float *b, float *c) {
   c[threadIdx.x] = a[threadIdx.x] + b[threadIdx.x];
@@ -35,8 +30,7 @@ int main(int argc, char *argv[]) {
   dim3 block_size = dim3(num, 1, 1);  // determine the number of threads
   
   vecadd<<<grid_size, block_size>>>(a, b, c);
-  
-  wait();
+  cudaThreadSynchronize();
   
   for (int i=0; i<num; ++i) printf("c[%2d]: %f\n", i, c[i]);
   
