@@ -11,8 +11,8 @@
 #define BLOCK_SIZE  32
 #define SHOW_SIZE   8
 
-/** function to return the current time                              **/
-/**********************************************************************/
+/** function to return the current time                                      **/
+/******************************************************************************/
 __host__
 long long get_time() {
   struct timeval  tp;
