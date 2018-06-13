@@ -17,8 +17,8 @@ void vecadd(float *a, float *b, float *c, int n) {
 int main(int argc, char *argv[]) {
   // check command line arguments
   ///////////////////////////////////////////
-  if (argc == 1) { std::cout << "usage: ./vecadd <numdata> <numstream> <numtry>"   << std::endl; exit(0); }
-  if (argc != 4) { std::cerr << "Error! The number of argument is wrong." << std::endl; exit(1); }
+  if (argc == 1) { std::cout << "usage: ./vecadd <numdata> <numstream> <numtry>" << std::endl; exit(0); }
+  if (argc != 4) { std::cerr << "Error! The number of argument is wrong."        << std::endl; exit(1); }
 
   const int numdata   = std::stoull(std::string(argv[1]));
   const int numstream = std::stoull(std::string(argv[2]));
