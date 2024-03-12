@@ -1,0 +1,98 @@
+[2024-03-11 15:12:29.285 Other 80558] Startup
+[2024-03-11 15:12:29.285 Other 80558] Connecting to control daemon on socket: /work/1/CCUSC/rkobayashi/github/cuda-samples/mps/.mps.392599/control
+[2024-03-11 15:12:29.285 Other 80558] Initializing server process
+[2024-03-11 15:12:29.398 Server 80558] Creating server context on device 0 (Tesla V100-PCIE-32GB)
+[2024-03-11 15:12:29.441 Server 80558] Creating server context on device 1 (Tesla V100-PCIE-32GB)
+[2024-03-11 15:12:29.494 Server 80558] Creating server context on device 2 (Tesla V100-PCIE-32GB)
+[2024-03-11 15:12:29.539 Server 80558] Creating server context on device 3 (Tesla V100-PCIE-32GB)
+[2024-03-11 15:12:29.591 Server 80558] Created named shared memory region /cuda.shm.7875.13aae.1
+[2024-03-11 15:12:29.591 Server 80558] Active Threads Percentage set to 100.0
+[2024-03-11 15:12:29.591 Server 80558] Server Priority set to 0
+[2024-03-11 15:12:29.591 Server 80558] Server has started
+[2024-03-11 15:12:29.591 Server 80558] Received new client request
+[2024-03-11 15:12:29.591 Server 80558] Worker created
+[2024-03-11 15:12:29.591 Server 80558] Creating worker thread
+[2024-03-11 15:12:29.621 Server 80558] Received new client request
+[2024-03-11 15:12:29.621 Server 80558] Worker created
+[2024-03-11 15:12:29.621 Server 80558] Creating worker thread
+[2024-03-11 15:12:29.632 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:29.632 Server 80558] Client process disconnected
+[2024-03-11 15:12:29.724 Server 80558] Received new client request
+[2024-03-11 15:12:29.725 Server 80558] Worker created
+[2024-03-11 15:12:29.725 Server 80558] Creating worker thread
+[2024-03-11 15:12:29.754 Server 80558] Received new client request
+[2024-03-11 15:12:29.754 Server 80558] Worker created
+[2024-03-11 15:12:29.754 Server 80558] Creating worker thread
+[2024-03-11 15:12:29.764 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:29.764 Server 80558] Client process disconnected
+[2024-03-11 15:12:30.525 Server 80558] Received new client request
+[2024-03-11 15:12:30.525 Server 80558] Worker created
+[2024-03-11 15:12:30.525 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.527 Server 80558] Received new client request
+[2024-03-11 15:12:30.527 Server 80558] Worker created
+[2024-03-11 15:12:30.527 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.532 Server 80558] Received new client request
+[2024-03-11 15:12:30.532 Server 80558] Worker created
+[2024-03-11 15:12:30.532 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.533 Server 80558] Received new client request
+[2024-03-11 15:12:30.533 Server 80558] Worker created
+[2024-03-11 15:12:30.533 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.536 Server 80558] Received new client request
+[2024-03-11 15:12:30.536 Server 80558] Worker created
+[2024-03-11 15:12:30.536 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.565 Server 80558] Received new client request
+[2024-03-11 15:12:30.566 Server 80558] Worker created
+[2024-03-11 15:12:30.566 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.566 Server 80558] Device Tesla V100-PCIE-32GB (uuid 0xcac2d0ab-0x49aaddc3-0x4a9abc95-0x7f6c8ef1) is associated
+[2024-03-11 15:12:30.566 Server 80558] Status of client {80620, 1} is ACTIVE
+[2024-03-11 15:12:30.573 Server 80558] Received new client request
+[2024-03-11 15:12:30.573 Server 80558] Worker created
+[2024-03-11 15:12:30.573 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.573 Server 80558] Device Tesla V100-PCIE-32GB (uuid 0xcac2d0ab-0x49aaddc3-0x4a9abc95-0x7f6c8ef1) is associated
+[2024-03-11 15:12:30.573 Server 80558] Status of client {80622, 1} is ACTIVE
+[2024-03-11 15:12:30.651 Server 80558] Received new client request
+[2024-03-11 15:12:30.651 Server 80558] Worker created
+[2024-03-11 15:12:30.651 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.651 Server 80558] Device Tesla V100-PCIE-32GB (uuid 0xcac2d0ab-0x49aaddc3-0x4a9abc95-0x7f6c8ef1) is associated
+[2024-03-11 15:12:30.651 Server 80558] Status of client {80621, 1} is ACTIVE
+[2024-03-11 15:12:30.679 Server 80558] Received new client request
+[2024-03-11 15:12:30.679 Server 80558] Worker created
+[2024-03-11 15:12:30.679 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.679 Server 80558] Device Tesla V100-PCIE-32GB (uuid 0xcac2d0ab-0x49aaddc3-0x4a9abc95-0x7f6c8ef1) is associated
+[2024-03-11 15:12:30.679 Server 80558] Status of client {80619, 1} is ACTIVE
+[2024-03-11 15:12:30.682 Server 80558] Received new client request
+[2024-03-11 15:12:30.682 Server 80558] Worker created
+[2024-03-11 15:12:30.682 Server 80558] Creating worker thread
+[2024-03-11 15:12:30.682 Server 80558] Device Tesla V100-PCIE-32GB (uuid 0xcac2d0ab-0x49aaddc3-0x4a9abc95-0x7f6c8ef1) is associated
+[2024-03-11 15:12:30.682 Server 80558] Status of client {80623, 1} is ACTIVE
+[2024-03-11 15:12:43.266 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:43.266 Server 80558] Client process disconnected
+[2024-03-11 15:12:43.266 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:43.266 Server 80558] Client {80622, 1} exit
+[2024-03-11 15:12:43.266 Server 80558] Client disconnected. Number of active client contexts is 4.
+[2024-03-11 15:12:57.877 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:57.877 Server 80558] Client process disconnected
+[2024-03-11 15:12:57.878 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:12:57.878 Server 80558] Client {80620, 1} exit
+[2024-03-11 15:12:57.878 Server 80558] Client disconnected. Number of active client contexts is 3.
+[2024-03-11 15:13:13.612 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:13.612 Server 80558] Client process disconnected
+[2024-03-11 15:13:13.612 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:13.612 Server 80558] Client {80621, 1} exit
+[2024-03-11 15:13:13.612 Server 80558] Client disconnected. Number of active client contexts is 2.
+[2024-03-11 15:13:29.534 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:29.534 Server 80558] Client process disconnected
+[2024-03-11 15:13:29.534 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:29.534 Server 80558] Client {80623, 1} exit
+[2024-03-11 15:13:29.534 Server 80558] Client disconnected. Number of active client contexts is 1.
+[2024-03-11 15:13:45.231 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:45.231 Server 80558] Client process disconnected
+[2024-03-11 15:13:45.231 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:45.231 Server 80558] Client {80619, 1} exit
+[2024-03-11 15:13:45.231 Server 80558] Client disconnected. Number of active client contexts is 0.
+[2024-03-11 15:13:48.260 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:48.260 Server 80558] Client process disconnected
+[2024-03-11 15:13:48.263 Server 80558] Waiting for current clients to finish
+[2024-03-11 15:13:48.282 Server 80558] Receive command failed, assuming client exit
+[2024-03-11 15:13:48.282 Server 80558] Client process disconnected
+[2024-03-11 15:13:48.282 Server 80558] Exiting
