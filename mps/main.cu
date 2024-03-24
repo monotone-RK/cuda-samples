@@ -1,33 +1,72 @@
-/******************************************************************************/
-/* CUDA Sample Program (Matrix Multiplication)    Ryohei Kobayashi 2024.03.10 */
-/******************************************************************************/
+#include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 
-#define L_NAME "Matrix Multiplication with CUDA Ver 1.0"
-#define MATRIX_SIZE (8*1024)
 #define BLOCK_SIZE  32
 #define SHOW_SIZE   8
 
-/** function to return the current time                                      **/
+#define CUCHECK(call)                                                     \
+  do {                                                                    \
+    cudaError_t error = call;                                             \
+    if (error != cudaSuccess) {                                           \
+      printf("Error: %s:%d, ", __FILE__, __LINE__);                       \
+      printf("code: %d, reason: %s\n", error, cudaGetErrorString(error)); \
+      return EXIT_FAILURE;                                                \
+    }                                                                     \
+  } while (0)
+
+/** Stop watch                                                               **/
 /******************************************************************************/
-__host__
-long long get_time() {
-  struct timeval  tp;
-  struct timezone tz;
-  gettimeofday(&tp, &tz);
-  return tp.tv_sec * 1000000ull + tp.tv_usec;
+typedef struct timer {
+  double seconds;
+  double ref;
+  void (*reset)(struct timer *this_timer);
+  void (*start)(struct timer *this_timer);
+  void (*stop)(struct timer *this_timer);
+  void (*display)(struct timer *this_timer);
+  double (*result)(struct timer *this_timer);
+} Timer;
+
+void timer_reset(Timer *this_timer) {
+  this_timer->seconds = 0.0;
+  this_timer->ref = 0.0;
+  printf("Timer reset\n");
+  struct timespec ts;
+  clock_getres(CLOCK_MONOTONIC, &ts);
+  printf("Time precision:\t%ld.%09ld sec\n", (long)ts.tv_sec, ts.tv_nsec);
+}
+
+void timer_start(Timer *this_timer) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  this_timer->ref = (double)(ts.tv_sec) + (double)ts.tv_nsec * 1e-9;
+}
+
+void timer_stop(Timer *this_timer) {
+  this_timer->seconds -= this_timer->ref;
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  this_timer->ref = (double)(ts.tv_sec) + (double)ts.tv_nsec * 1e-9;
+  this_timer->seconds += this_timer->ref;
+}
+
+void timer_display(Timer *this_timer) {
+  printf("Elapsed time: \t%lf sec\n", this_timer->seconds);
+}
+
+double timer_result(Timer *this_timer) {
+  return this_timer->seconds;
 }
 
 /******************************************************************************/
 __global__
-void matmul_naive(float *a, float *b, float *c, int matrix_size) {
+void matmul_naive(double *a, double *b, double *c, int matrix_size) {
   const unsigned int xidx = blockIdx.x * blockDim.x + threadIdx.x;
   const unsigned int yidx = blockIdx.y * blockDim.y + threadIdx.y;
 
-  float sum = 0;
+  double sum = 0;
   for (int i = 0; i<matrix_size; ++i) {
     sum += a[yidx*matrix_size+i] * b[i*matrix_size+xidx];
   }
@@ -36,14 +75,14 @@ void matmul_naive(float *a, float *b, float *c, int matrix_size) {
 
 /******************************************************************************/
 __global__
-void matmul_shared(float *a, float *b, float *c, int matrix_size) {
+void matmul_shared(double *a, double *b, double *c, int matrix_size) {
   const unsigned int xidx = blockIdx.x * blockDim.x + threadIdx.x;
   const unsigned int yidx = blockIdx.y * blockDim.y + threadIdx.y;
 
-  float sum = 0;
+  double sum = 0;
   for (int i = 0; i<matrix_size; i+=BLOCK_SIZE) {
-    __shared__ float sub_a[BLOCK_SIZE][BLOCK_SIZE];
-    __shared__ float sub_b[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ double sub_a[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ double sub_b[BLOCK_SIZE][BLOCK_SIZE];
 
     sub_a[threadIdx.y][threadIdx.x] = a[yidx*matrix_size+(i+threadIdx.x)];
     sub_b[threadIdx.y][threadIdx.x] = b[(i+threadIdx.y)*matrix_size+xidx];
@@ -60,66 +99,86 @@ void matmul_shared(float *a, float *b, float *c, int matrix_size) {
 
 /******************************************************************************/
 int main(int argc, char *argv[]) {
-
-  if (argc == 1) {
-    printf("%s\n", L_NAME);
-    printf("usage: ./matmul [execution type]\n");
-    printf(" execution type : naive, shared\n");
-    exit(1);
+  // Show how to use this program
+  if (argc != 3) {
+    printf("Usage: ./matmul [matrix size] [execution type]\n");
+    return EXIT_FAILURE;
   }
 
-  if (argc != 2) {
-    printf("Error! The number of argument is wrong.\n");
-    exit(1);
-  }
+  // Declare stop watch
+  Timer stop_watch = {
+                      0.0,
+                      0.0,
+                      timer_reset,
+                      timer_start,
+                      timer_stop,
+                      timer_display,
+                      timer_result
+                      };
 
-  float *a;
-  float *b;
-  float *c;
+  int matrix_size = atoi(argv[1]);
+  double *a, *b, *c;
+  double *d_a, *d_b, *d_c;
 
-  long long start;
-  long long end;
+  // Allocate host memory
+  CUCHECK(cudaMallocHost((void **)&a, matrix_size * matrix_size * sizeof(double)));
+  CUCHECK(cudaMallocHost((void **)&b, matrix_size * matrix_size * sizeof(double)));
+  CUCHECK(cudaMallocHost((void **)&c, matrix_size * matrix_size * sizeof(double)));
 
-  cudaMallocHost(&a, MATRIX_SIZE*MATRIX_SIZE*sizeof(float));
-  cudaMallocHost(&b, MATRIX_SIZE*MATRIX_SIZE*sizeof(float));
-  cudaMallocHost(&c, MATRIX_SIZE*MATRIX_SIZE*sizeof(float));
+  // Allocate device memory
+  CUCHECK(cudaMalloc((void **)&d_a, matrix_size * matrix_size * sizeof(double)));
+  CUCHECK(cudaMalloc((void **)&d_b, matrix_size * matrix_size * sizeof(double)));
+  CUCHECK(cudaMalloc((void **)&d_c, matrix_size * matrix_size * sizeof(double)));
 
-  for (int y=0; y<MATRIX_SIZE; ++y) {
-    for (int x=0; x<MATRIX_SIZE; ++x) {
-      a[y*MATRIX_SIZE+x] = 1.0;
-      b[y*MATRIX_SIZE+x] = 2.0;
-      c[y*MATRIX_SIZE+x] = 0.0;
+  // Initialize matrices on the host
+  for (int y = 0; y < matrix_size; ++y) {
+    for (int x = 0; x < matrix_size; ++x) {
+      a[y * matrix_size + x] = 1.0;
+      b[y * matrix_size + x] = 2.0;
+      c[y * matrix_size + x] = 0.0;
     }
   }
 
-  dim3 block(BLOCK_SIZE, BLOCK_SIZE);                         // determine the number of threads
-  dim3 grid(MATRIX_SIZE/BLOCK_SIZE, MATRIX_SIZE/BLOCK_SIZE);  // determine the number of blocks
+  // Copy matrices from the host to the device
+  CUCHECK(cudaMemcpy(d_a, a, matrix_size * matrix_size * sizeof(double), cudaMemcpyHostToDevice));
+  CUCHECK(cudaMemcpy(d_b, b, matrix_size * matrix_size * sizeof(double), cudaMemcpyHostToDevice));
 
-  if (!strcmp(argv[1], "naive")) {
-    start = get_time();
-    matmul_naive<<<grid, block>>>(a, b, c, MATRIX_SIZE);
-  } else if (!strcmp(argv[1], "shared")) {
-    start = get_time();
-    matmul_shared<<<grid, block>>>(a, b, c, MATRIX_SIZE);
+  dim3 block(BLOCK_SIZE, BLOCK_SIZE);
+  dim3 grid((matrix_size + BLOCK_SIZE - 1) / BLOCK_SIZE,
+            (matrix_size + BLOCK_SIZE - 1) / BLOCK_SIZE);
+
+  stop_watch.reset(&stop_watch);
+  stop_watch.start(&stop_watch);
+  if (!strcmp(argv[2], "naive")) {
+    matmul_naive<<<grid, block>>>(d_a, d_b, d_c, matrix_size);
+  } else if (!strcmp(argv[2], "shared")) {
+    matmul_shared<<<grid, block>>>(d_a, d_b, d_c, matrix_size);
   } else {
-    printf("execution type is wrong.\n");
-    exit(1);
+    printf("Execution type is wrong.\n");
+    return EXIT_FAILURE;
   }
-
   cudaDeviceSynchronize();
-  end = get_time();
+  stop_watch.stop(&stop_watch);
 
-  for (int y=0; y<SHOW_SIZE; ++y) {
-    for (int x=0; x<SHOW_SIZE; ++x) {
-      printf("%f ", c[y*MATRIX_SIZE+x]);
+  // Copy result from device to host
+  CUCHECK(cudaMemcpy(c, d_c, matrix_size * matrix_size * sizeof(double), cudaMemcpyDeviceToHost));
+
+  // Display some of the result
+  for (int y = 0; y < SHOW_SIZE && y < matrix_size; ++y) {
+    for (int x = 0; x < SHOW_SIZE && x < matrix_size; ++x) {
+      printf("%f ", c[y * matrix_size + x]);
     }
     printf("\n");
   }
-  printf("# elasped time:%9.3f sec\n", (end - start)/1000000.0);
+  stop_watch.display(&stop_watch);
 
+  // Free memory
   cudaFreeHost(a);
   cudaFreeHost(b);
   cudaFreeHost(c);
+  cudaFree(d_a);
+  cudaFree(d_b);
+  cudaFree(d_c);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
