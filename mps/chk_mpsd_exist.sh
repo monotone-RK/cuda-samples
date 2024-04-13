@@ -1,11 +1,11 @@
 #!/bin/bash
 #------- qsub option -----------
 #PBS -A CCUSC
-#PBS -q fpga
+#PBS -q gpu
 #PBS -l elapstim_req=00:03:00
 #PBS -T openmpi
 #PBS -b 1
-#PBS -v NQSV_MPI_VER=gdr/4.1.5/nvhpc22.11_gcc8.3.1-cuda11.8
+#PBS -v NQSV_MPI_VER=4.1.5/gcc9.4.0-cuda11.8.0
 
 #------- Program execution ----------
 #--- move working dir
