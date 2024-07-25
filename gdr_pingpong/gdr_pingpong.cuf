@@ -1,0 +1,121 @@
+program gdr_pingpong
+  use cudafor
+  use mpi
+  implicit none
+
+  integer :: rank, size, ierr
+  integer :: max_elements, num_elements, arg_index, num_iterations
+  real(4), allocatable, device :: d_send(:), d_recv(:)
+  real(4), allocatable :: h_send(:), h_recv(:)
+  integer :: i, j, num_args
+  double precision :: start_time, end_time, total_time, latency, bandwidth
+  character(len=100) :: arg
+
+  call MPI_Init(ierr)
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+  call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
+
+  if (size .ne. 2) then
+     if (rank == 0) print *, "This program requires exactly 2 processes"
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+  end if
+
+  ! Get the number of command line arguments
+  num_args = command_argument_count()
+
+  ! Parse command line arguments
+  max_elements = -1
+  num_iterations = -1
+  do arg_index = 1, num_args
+     call get_command_argument(arg_index, arg)
+     if (arg == "-max_elements") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, arg)
+           read(arg, *) max_elements
+        else
+           if (rank == 0) print *, "Error: -max_elements requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
+     if (arg == "-num_iterations") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, arg)
+           read(arg, *) num_iterations
+        else
+           if (rank == 0) print *, "Error: -num_iterations requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
+  end do
+
+  if (max_elements == -1 .or. num_iterations == -1) then
+     if (rank == 0) print *, "Error: both -max_elements and -num_iterations are required"
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+  end if
+
+  if (rank == 0) then
+    print *, "Maximum number of elements: ", max_elements
+    print *, "Number of iterations: ", num_iterations
+  end if
+
+  ! Allocate memory for the maximum number of elements
+  allocate(h_send(max_elements), h_recv(max_elements))
+  allocate(d_send(max_elements), d_recv(max_elements))
+
+  ! Initialize the host data
+  h_send = 1.0
+  h_recv = 0.0
+
+  ! Copy data from host to device
+  d_send = h_send
+
+  ! Loop over different array sizes (1, 2, 4, ..., max_elements)
+  num_elements = 1
+  do while (num_elements <= max_elements)
+    if (rank == 0) then
+      print *, "Starting ping-pong communication with GDR for ", num_elements, " elements"
+    end if
+
+    ! Barrier synchronization before starting the communication
+    call MPI_Barrier(MPI_COMM_WORLD, ierr)
+    ! Measure the time for ping-pong communication
+    start_time = MPI_Wtime()
+
+    do i = 1, num_iterations
+      if (rank == 1) then
+        ! Receive data from rank 0
+        call MPI_Recv(d_recv, num_elements, MPI_REAL4, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+        ! Send data to rank 0
+        call MPI_Send(d_send, num_elements, MPI_REAL4, 0, 0, MPI_COMM_WORLD, ierr)
+      else if (rank == 0) then
+        ! Send data to rank 1
+        call MPI_Send(d_send, num_elements, MPI_REAL4, 1, 0, MPI_COMM_WORLD, ierr)
+        ! Receive data from rank 1
+        call MPI_Recv(d_recv, num_elements, MPI_REAL4, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierr)
+      end if
+    end do
+
+    end_time = MPI_Wtime()
+    total_time = end_time - start_time
+
+    ! Calculate latency and bandwidth
+    latency = (total_time / 2.0) / num_iterations
+    bandwidth = (num_elements * 4.0) / (latency * 1.0d9)  ! bandwidth in GB/s (4 bytes per REAL4)
+
+    if (rank == 0) then
+      print *, "Total time for ", num_elements, " elements: ", total_time, " seconds"
+      print *, "Latency: ", latency, " seconds"
+      print *, "Bandwidth: ", bandwidth, " GB/s"
+    end if
+
+    ! Increase the number of elements by a factor of 2
+    num_elements = num_elements * 2
+  end do
+
+  deallocate(d_send)
+  deallocate(d_recv)
+  deallocate(h_send)
+  deallocate(h_recv)
+
+  call MPI_Finalize(ierr)
+end program gdr_pingpong
