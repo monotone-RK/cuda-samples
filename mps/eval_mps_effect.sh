@@ -1,11 +1,11 @@
 #!/bin/bash
 #------- qsub option -----------
 #PBS -A CCUSC
-#PBS -q fpga
+#PBS -q gpu
 #PBS -l elapstim_req=00:10:00
 #PBS -T openmpi
 #PBS -b 1
-#PBS -v NQSV_MPI_VER=gdr/4.1.5/nvhpc22.11_gcc8.3.1-cuda11.8
+#PBS -v NQSV_MPI_VER=4.1.5/gcc9.4.0-cuda11.8.0
 
 #------- Program execution ----------
 # MPSコントロールデーモンを開始
@@ -32,13 +32,14 @@ export CUDA_MPS_LOG_DIRECTORY=$CUDA_MPS_DIR
 # MPSなしでアプリケーションを実行
 # ./run_matmul.sh
 # nsys profile -o wo_mps --gpu-metrics-device=all --force-overwrite=true ./run_matmul.sh
-nsys profile -o wo_mps --gpu-metrics-device=all --force-overwrite=true mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 5 -npernode 5 ./matmul naive
+nsys profile -o wo_mps --gpu-metrics-device=all --force-overwrite=true mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 1 -npernode 1 ./matmul 8192 naive
+# ncu --target-processes all -o wo_mps --set full -f mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 1 -npernode 1 ./matmul naive
 # time mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 5 -npernode 5 ./matmul naive
 
-# MPSありでアプリケーションを実行
-start_mps
-# ./run_matmul.sh
-# nsys profile -o w_mps --gpu-metrics-device=all --force-overwrite=true ./run_matmul.sh
-nsys profile -o w_mps --gpu-metrics-device=all --force-overwrite=true mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 5 -npernode 5 ./matmul naive
-# time mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 5 -npernode 5 ./matmul naive
-stop_mps
+# # MPSありでアプリケーションを実行
+# start_mps
+# # ./run_matmul.sh
+# # nsys profile -o w_mps --gpu-metrics-device=all --force-overwrite=true ./run_matmul.sh
+# nsys profile -o w_mps --gpu-metrics-device=all --force-overwrite=true mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 1 -npernode 1 ./matmul naive
+# # time mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 5 -npernode 5 ./matmul naive
+# stop_mps

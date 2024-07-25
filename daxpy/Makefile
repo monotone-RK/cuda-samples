@@ -4,16 +4,13 @@
 
 CC=nvcc
 SRCS=main.cu
-TARGET=matmul
+TARGET=daxpy
 
 compile:
 	$(CC) -O3 -arch sm_90 $(SRCS) -o $(TARGET)
 
 run:
-	qsub eval_mps_effect.sh
-
-check:
-	qsub chk_mpsd_exist.sh
+	qsub chk_core_usage.sh
 
 clean:
 	rm -rf $(TARGET) *.sh.* *.nsys-rep *.csv .mps.*
