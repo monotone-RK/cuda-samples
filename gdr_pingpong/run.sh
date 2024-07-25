@@ -10,4 +10,4 @@
 #------- Program execution ----------
 cd $PBS_O_WORKDIR
 module load openmpi/"$NQSV_MPI_VER"
-mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 2 -npernode 1 ./gdr_pingpong -max_elements 1048576 -num_iterations 100
+mpirun ${NQSV_MPIOPTS} -report-bindings -bind-to none -np 2 -npernode 1 ./gdr_pingpong -max_elements 268435456 -num_iterations 1000

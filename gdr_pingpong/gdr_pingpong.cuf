@@ -10,6 +10,7 @@ program gdr_pingpong
   integer :: i, j, num_args
   double precision :: start_time, end_time, total_time, latency, bandwidth
   character(len=100) :: arg
+  logical :: data_match
 
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
@@ -102,8 +103,20 @@ program gdr_pingpong
     latency = (total_time / 2.0) / num_iterations
     bandwidth = (num_elements * 4.0) / (latency * 1.0d9)  ! bandwidth in GB/s (4 bytes per REAL4)
 
+    ! Copy data from device to host
+    h_recv = d_recv
+
+    ! Check if data matches
     if (rank == 0) then
+      data_match = all(h_recv(1:num_elements) == h_send(1:num_elements))
+      if (data_match) then
+        print *, "Data match for ", num_elements, " elements"
+      else
+        print *, "Error: Data mismatch for ", num_elements, " elements"
+        call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+      end if
       print *, "Total time for ", num_elements, " elements: ", total_time, " seconds"
+      print *, "Data size: ", (num_elements * 4), " bytes"
       print *, "Latency: ", latency, " seconds"
       print *, "Bandwidth: ", bandwidth, " GB/s"
     end if
