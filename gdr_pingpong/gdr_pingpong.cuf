@@ -9,8 +9,10 @@ program gdr_pingpong
   real(4), allocatable :: h_send(:), h_recv(:)
   integer :: i, j, num_args
   double precision :: start_time, end_time, total_time, latency, bandwidth
-  character(len=100) :: arg
+  character(len=100) :: arg, output_filename
   logical :: data_match
+  logical :: output_file_specified
+  integer :: file_unit
 
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
@@ -27,6 +29,7 @@ program gdr_pingpong
   ! Parse command line arguments
   max_elements = -1
   num_iterations = -1
+  output_file_specified = .false.
   do arg_index = 1, num_args
      call get_command_argument(arg_index, arg)
      if (arg == "-max_elements") then
@@ -47,6 +50,15 @@ program gdr_pingpong
            call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
         end if
      end if
+     if (arg == "-output_file") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, output_filename)
+           output_file_specified = .true.
+        else
+           if (rank == 0) print *, "Error: -output_file requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
   end do
 
   if (max_elements == -1 .or. num_iterations == -1) then
@@ -54,9 +66,19 @@ program gdr_pingpong
      call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
   end if
 
+  if (.not. output_file_specified) then
+     if (rank == 0) print *, "Error: -output_file is required"
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+  end if
+
   if (rank == 0) then
     print *, "Maximum number of elements: ", max_elements
     print *, "Number of iterations: ", num_iterations
+    print *, "Output file: ", output_filename
+
+    ! Open the output file
+    open(unit=file_unit, file=trim(output_filename), status='replace', action='write')
+    write(file_unit, '(A)') 'Data size,Latency,Bandwidth'
   end if
 
   ! Allocate memory for the maximum number of elements
@@ -119,11 +141,18 @@ program gdr_pingpong
       print *, "Data size: ", (num_elements * 4), " bytes"
       print *, "Latency: ", latency, " seconds"
       print *, "Bandwidth: ", bandwidth, " GB/s"
+
+      ! Write the results to the output file
+      write(file_unit, '(I10,",",F20.10,",",F20.10)') num_elements * 4, latency, bandwidth
     end if
 
     ! Increase the number of elements by a factor of 2
     num_elements = num_elements * 2
   end do
+
+  if (rank == 0) then
+    close(file_unit)
+  end if
 
   deallocate(d_send)
   deallocate(d_recv)

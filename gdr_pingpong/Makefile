@@ -11,4 +11,4 @@ run:
 
 .PHONY: clean
 clean:
-	rm -rf $(TARGET)
+	rm -rf $(TARGET) run.sh.* *.svg
