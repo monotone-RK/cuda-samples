@@ -1,0 +1,14 @@
+module nvtx_mod
+    interface
+        subroutine nvtxRangePushA(msg) bind(C, name="nvtxRangePushWrapper")
+            use iso_c_binding
+            implicit none
+            character(kind=c_char), intent(in) :: msg(*)
+        end subroutine nvtxRangePushA
+
+        subroutine nvtxRangePop() bind(C, name="nvtxRangePopWrapper")
+            use iso_c_binding
+            implicit none
+        end subroutine nvtxRangePop
+    end interface
+end module nvtx_mod

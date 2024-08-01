@@ -1,0 +1,154 @@
+program gdr_allreduce
+  use cudafor
+  use nvtx_mod
+  use mpi
+  implicit none
+
+  integer :: rank, size, ierr
+  integer :: max_elements, num_elements, arg_index, num_iterations
+  real(4), allocatable, device :: d_send(:), d_recv(:)
+  real(4), allocatable :: h_send(:), h_recv(:)
+  integer :: i, j, num_args
+  double precision :: start_time, end_time, total_time, latency, bandwidth
+  character(len=100) :: arg, output_filename
+  logical :: data_match
+  logical :: output_file_specified
+  integer :: file_unit
+  real(4) :: expected_value
+
+  call MPI_Init(ierr)
+  call MPI_Comm_rank(MPI_COMM_WORLD, rank, ierr)
+  call MPI_Comm_size(MPI_COMM_WORLD, size, ierr)
+
+  ! Get the number of command line arguments
+  num_args = command_argument_count()
+
+  ! Parse command line arguments
+  max_elements = -1
+  num_iterations = -1
+  output_file_specified = .false.
+  do arg_index = 1, num_args
+     call get_command_argument(arg_index, arg)
+     if (arg == "-max_elements") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, arg)
+           read(arg, *) max_elements
+        else
+           if (rank == 0) print *, "Error: -max_elements requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
+     if (arg == "-num_iterations") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, arg)
+           read(arg, *) num_iterations
+        else
+           if (rank == 0) print *, "Error: -num_iterations requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
+     if (arg == "-output_file") then
+        if (arg_index + 1 <= num_args) then
+           call get_command_argument(arg_index + 1, output_filename)
+           output_file_specified = .true.
+        else
+           if (rank == 0) print *, "Error: -output_file requires an argument"
+           call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+        end if
+     end if
+  end do
+
+  if (max_elements == -1 .or. num_iterations == -1) then
+     if (rank == 0) print *, "Error: both -max_elements and -num_iterations are required"
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+  end if
+
+  if (.not. output_file_specified) then
+     if (rank == 0) print *, "Error: -output_file is required"
+     call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+  end if
+
+  if (rank == 0) then
+    print *, "Maximum number of elements: ", max_elements
+    print *, "Number of iterations: ", num_iterations
+    print *, "Output file: ", output_filename
+
+    ! Open the output file
+    open(unit=file_unit, file=trim(output_filename), status='replace', action='write')
+    write(file_unit, '(A)') 'Data size,Latency,Bandwidth'
+  end if
+
+  ! Allocate memory for the maximum number of elements
+  allocate(h_send(max_elements), h_recv(max_elements))
+  allocate(d_send(max_elements), d_recv(max_elements))
+
+  ! Initialize the host and device data
+  h_send = 1.0
+  h_recv = 0.0
+  d_send = h_send
+  d_recv = 0.0
+
+  ! Loop over different array sizes (1, 2, 4, ..., max_elements)
+  num_elements = 1
+  do while (num_elements <= max_elements)
+    if (rank == 0) then
+      print *, "Starting MPI_Allreduce with GDR for ", num_elements, " elements"
+    end if
+
+    ! Barrier synchronization before starting the communication
+    call MPI_Barrier(MPI_COMM_WORLD, ierr)
+    ! Measure the time for MPI_Allreduce communication
+    start_time = MPI_Wtime()
+
+    call nvtxRangePushA("MPI_Allreduce"//c_null_char)
+    do i = 1, num_iterations
+      ! Perform MPI_Allreduce using CUDA-aware MPI
+      call MPI_Allreduce(d_send, d_recv, num_elements, MPI_REAL4, MPI_SUM, MPI_COMM_WORLD, ierr)
+    end do
+    call nvtxRangePop()
+
+    end_time = MPI_Wtime()
+    total_time = end_time - start_time
+
+    ! Calculate latency and bandwidth
+    latency = total_time / num_iterations
+    ! Each process sends and receives num_elements * 4 bytes, and each communication is done among all processes
+    bandwidth = (num_elements * 4.0 * 2 * size) / (latency * 1.0d9)  ! bandwidth in GB/s (4 bytes per REAL4)
+
+    ! Copy data from device to host
+    h_recv = d_recv
+
+    ! Check if data matches
+    expected_value = real(size, kind=4)
+    if (rank == 0) then
+      data_match = all(h_recv(1:num_elements) == expected_value)  ! Each element should be equal to 'size' after Allreduce with MPI_SUM
+      if (data_match) then
+        print *, "Data match for ", num_elements, " elements"
+      else
+        print *, "Error: Data mismatch for ", num_elements, " elements"
+        call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
+      end if
+      print *, "Total time for ", num_elements, " elements: ", total_time, " seconds"
+      print *, "Data size: ", (num_elements * 4), " bytes"
+      print *, "Latency: ", latency, " seconds"
+      print *, "Bandwidth: ", bandwidth, " GB/s"
+
+      ! Write the results to the output file
+      write(file_unit, '(I10,",",F20.10,",",F20.10)') num_elements * 4, latency, bandwidth
+    end if
+
+    ! Increase the number of elements by a factor of 2
+    num_elements = num_elements * 2
+  end do
+
+  if (rank == 0) then
+    close(file_unit)
+  end if
+
+  deallocate(d_send)
+  deallocate(d_recv)
+  deallocate(h_send)
+  deallocate(h_recv)
+
+  call MPI_Finalize(ierr)
+end program gdr_allreduce
