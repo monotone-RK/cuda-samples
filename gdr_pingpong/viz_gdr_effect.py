@@ -16,6 +16,8 @@ def format_data_size(size):
 def plot_data(csv_files, output_file):
     plt.figure(figsize=(18, 10))
 
+    max_bandwidth = 0
+
     for csv_file in csv_files:
         # CSVファイルを読み込む
         df = pd.read_csv(csv_file)
@@ -29,6 +31,9 @@ def plot_data(csv_files, output_file):
         # データをプロット
         plt.plot(formatted_data_size, df['Bandwidth'], marker='o', linestyle='-', label=legend_name)
 
+        # 最大帯域幅を更新
+        max_bandwidth = max(max_bandwidth, max(df['Bandwidth']))
+
     # フォントサイズを設定
     plt.xlabel('Data size [Bytes]', fontsize=20)
     plt.ylabel('Bandwidth [GB/s]', fontsize=20)
@@ -38,11 +43,14 @@ def plot_data(csv_files, output_file):
     # 凡例を表示（グラフのボックスの外、中央の上側、横並び）
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.1), fontsize=20, ncol=len(csv_files))
 
-    # 縦軸を0から始める
-    plt.ylim(0, max(df['Bandwidth']) * 1.1)
+    # 縦軸を0から最大帯域幅の1.1倍までに設定
+    plt.ylim(0, max_bandwidth * 1.1)
 
     # グリッド線を消す
     plt.grid(False)
+
+    # レイアウトを調整
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
 
     # SVGファイルとして保存
     plt.savefig(output_file, format='svg', bbox_inches='tight')
